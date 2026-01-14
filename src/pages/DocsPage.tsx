@@ -170,7 +170,7 @@ export function DocsPage() {
                     </p>
                     <Button
                       variant="outline"
-                      onClick={() => window.open(selectedProject.graphql_endpoint, '_blank')}
+                      onClick={() => selectedProject.graphql_endpoint && window.open(selectedProject.graphql_endpoint, '_blank')}
                     >
                       <ExternalLink className="w-4 h-4 mr-2" />
                       Open in New Tab

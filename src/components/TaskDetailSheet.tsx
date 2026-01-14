@@ -35,7 +35,7 @@ export function TaskDetailSheet({ task, open, onOpenChange }: TaskDetailSheetPro
       const result = await callMockApi(task.id, selectedScenario)
       setTestResult(result)
     } catch (error) {
-      setTestResult({ error: error.message })
+      setTestResult({ error: (error as Error).message })
     } finally {
       setTesting(false)
     }
