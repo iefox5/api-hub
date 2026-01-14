@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { useApiTasks } from '@/lib/hooks/useApiTasks'
 import { useProjects } from '@/lib/hooks/useProjects'
 import { TaskCard } from '@/components/TaskCard'
+import { CreateTaskDialog } from '@/components/CreateTaskDialog'
 import { Button } from '@/components/ui/button'
 import { Loader2, Plus } from 'lucide-react'
 import type { TaskStatus } from '@/lib/types'
@@ -15,6 +16,7 @@ const columns: { status: TaskStatus; label: string; color: string }[] = [
 
 export function TasksPage() {
   const [selectedProject, setSelectedProject] = useState<string>()
+  const [createDialogOpen, setCreateDialogOpen] = useState(false)
   const { data: tasks, isLoading } = useApiTasks({ projectId: selectedProject })
   const { data: projects } = useProjects()
 
@@ -57,7 +59,7 @@ export function TasksPage() {
                 </option>
               ))}
             </select>
-            <Button>
+            <Button onClick={() => setCreateDialogOpen(true)}>
               <Plus className="w-4 h-4 mr-2" />
               New Task
             </Button>
@@ -100,6 +102,11 @@ export function TasksPage() {
           </div>
         </div>
       </div>
+
+      <CreateTaskDialog
+        open={createDialogOpen}
+        onOpenChange={setCreateDialogOpen}
+      />
     </div>
   )
 }

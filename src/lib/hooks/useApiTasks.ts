@@ -56,3 +56,23 @@ export function useUpdateTaskStatus() {
     },
   })
 }
+
+export function useCreateApiTask() {
+  const queryClient = useQueryClient()
+
+  return useMutation({
+    mutationFn: async (task: Omit<ApiTask, 'id' | 'created_at' | 'updated_at' | 'project'>) => {
+      const { data, error } = await supabase
+        .from('api_tasks')
+        .insert([task])
+        .select()
+        .single()
+
+      if (error) throw error
+      return data
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['api_tasks'] })
+    },
+  })
+}
