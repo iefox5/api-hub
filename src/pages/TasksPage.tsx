@@ -3,9 +3,10 @@ import { useApiTasks } from '@/lib/hooks/useApiTasks'
 import { useProjects } from '@/lib/hooks/useProjects'
 import { TaskCard } from '@/components/TaskCard'
 import { CreateTaskDialog } from '@/components/CreateTaskDialog'
+import { TaskDetailSheet } from '@/components/TaskDetailSheet'
 import { Button } from '@/components/ui/button'
 import { Loader2, Plus } from 'lucide-react'
-import type { TaskStatus } from '@/lib/types'
+import type { TaskStatus, ApiTask } from '@/lib/types'
 
 const columns: { status: TaskStatus; label: string; color: string }[] = [
   { status: 'planning', label: 'Planning', color: 'bg-gray-50' },
@@ -17,6 +18,7 @@ const columns: { status: TaskStatus; label: string; color: string }[] = [
 export function TasksPage() {
   const [selectedProject, setSelectedProject] = useState<string>()
   const [createDialogOpen, setCreateDialogOpen] = useState(false)
+  const [selectedTask, setSelectedTask] = useState<ApiTask | null>(null)
   const { data: tasks, isLoading } = useApiTasks({ projectId: selectedProject })
   const { data: projects } = useProjects()
 
@@ -88,7 +90,11 @@ export function TasksPage() {
                   {/* Column content */}
                   <div className="flex-1 bg-gray-50 rounded-b-lg p-3 space-y-3 min-h-[400px]">
                     {columnTasks.map((task) => (
-                      <TaskCard key={task.id} task={task} />
+                      <TaskCard
+                        key={task.id}
+                        task={task}
+                        onClick={() => setSelectedTask(task)}
+                      />
                     ))}
                     {columnTasks.length === 0 && (
                       <div className="text-center text-sm text-gray-400 py-8">
@@ -106,6 +112,12 @@ export function TasksPage() {
       <CreateTaskDialog
         open={createDialogOpen}
         onOpenChange={setCreateDialogOpen}
+      />
+
+      <TaskDetailSheet
+        task={selectedTask}
+        open={!!selectedTask}
+        onOpenChange={(open) => !open && setSelectedTask(null)}
       />
     </div>
   )
