@@ -5,6 +5,7 @@ import { ProjectsPage } from './pages/ProjectsPage'
 import { TasksPage } from './pages/TasksPage'
 import { DocsPage } from './pages/DocsPage'
 import { ApiKeysPage } from './pages/ApiKeysPage'
+import { GraphQLDocsPage } from './pages/GraphQLDocsPage'
 
 const queryClient = new QueryClient()
 
@@ -18,6 +19,7 @@ function App() {
             <Route path="projects" element={<ProjectsPage />} />
             <Route path="tasks" element={<TasksPage />} />
             <Route path="docs" element={<DocsPage />} />
+            <Route path="graphql-docs" element={<GraphQLDocsPage />} />
             <Route path="api-keys" element={<ApiKeysPage />} />
           </Route>
         </Routes>

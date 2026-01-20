@@ -1,5 +1,5 @@
 import { Outlet, Link, useLocation } from 'react-router-dom'
-import { FileCode, ListTodo, BookOpen, Key } from 'lucide-react'
+import { FileCode, ListTodo, BookOpen, Key, Braces } from 'lucide-react'
 
 export function Layout() {
   const location = useLocation()
@@ -33,6 +33,12 @@ export function Layout() {
             icon={BookOpen}
             label="API Docs"
             active={isActive('/docs')}
+          />
+          <NavLink
+            to="/graphql-docs"
+            icon={Braces}
+            label="GraphQL Docs"
+            active={isActive('/graphql-docs')}
           />
           <NavLink
             to="/api-keys"
