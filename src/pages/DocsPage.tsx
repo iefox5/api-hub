@@ -19,7 +19,9 @@ import {
   TableRow,
 } from '@/components/ui/table'
 import { Badge } from '@/components/ui/badge'
-import { Loader2, ExternalLink, FileText } from 'lucide-react'
+import { Loader2, ExternalLink, FileText, Download } from 'lucide-react'
+import { exportOpenApiJson, exportOpenApiYaml } from '@/lib/exporters/openapi'
+import { exportMarkdown } from '@/lib/exporters/markdown'
 
 export function DocsPage() {
   const [selectedProjectId, setSelectedProjectId] = useState<string>()
@@ -28,6 +30,43 @@ export function DocsPage() {
 
   const selectedProject = projects?.find(p => p.id === selectedProjectId)
   const doneTasks = tasks?.filter(t => t.status === 'done')
+
+  const handleExport = (format: string) => {
+    if (!selectedProject || !tasks) return
+
+    let content: string
+    let filename: string
+    let mimeType: string
+    const date = new Date().toISOString().split('T')[0]
+
+    switch (format) {
+      case 'openapi-json':
+        content = exportOpenApiJson(selectedProject, tasks)
+        filename = `${selectedProject.name}-api-${date}.json`
+        mimeType = 'application/json'
+        break
+      case 'openapi-yaml':
+        content = exportOpenApiYaml(selectedProject, tasks)
+        filename = `${selectedProject.name}-api-${date}.yaml`
+        mimeType = 'text/yaml'
+        break
+      case 'markdown':
+        content = exportMarkdown(selectedProject, tasks)
+        filename = `${selectedProject.name}-api-${date}.md`
+        mimeType = 'text/markdown'
+        break
+      default:
+        return
+    }
+
+    const blob = new Blob([content], { type: mimeType })
+    const url = URL.createObjectURL(blob)
+    const a = document.createElement('a')
+    a.href = url
+    a.download = filename
+    a.click()
+    URL.revokeObjectURL(url)
+  }
 
   if (isLoading) {
     return (
@@ -48,9 +87,9 @@ export function DocsPage() {
               Browse API documentation and endpoints for your projects
             </p>
           </div>
-          <div className="w-64">
+          <div className="flex items-center gap-3">
             <Select value={selectedProjectId} onValueChange={setSelectedProjectId}>
-              <SelectTrigger>
+              <SelectTrigger className="w-48">
                 <SelectValue placeholder="Select a project" />
               </SelectTrigger>
               <SelectContent>
@@ -61,6 +100,19 @@ export function DocsPage() {
                 ))}
               </SelectContent>
             </Select>
+            {selectedProjectId && (
+              <Select onValueChange={handleExport}>
+                <SelectTrigger className="w-[160px]">
+                  <Download className="w-4 h-4 mr-2" />
+                  <SelectValue placeholder="Export" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="openapi-json">OpenAPI (JSON)</SelectItem>
+                  <SelectItem value="openapi-yaml">OpenAPI (YAML)</SelectItem>
+                  <SelectItem value="markdown">Markdown</SelectItem>
+                </SelectContent>
+              </Select>
+            )}
           </div>
         </div>
       </div>
