@@ -1,32 +1,90 @@
 import { useState } from 'react'
-import { useApiTasks } from '@/lib/hooks/useApiTasks'
+import {
+  DndContext,
+  DragEndEvent,
+  DragOverlay,
+  DragStartEvent,
+  PointerSensor,
+  useSensor,
+  useSensors,
+} from '@dnd-kit/core'
+import { useApiTasks, useUpdateTaskStatus } from '@/lib/hooks/useApiTasks'
 import { useProjects } from '@/lib/hooks/useProjects'
 import { TaskCard } from '@/components/TaskCard'
-import { CreateTaskDialog } from '@/components/CreateTaskDialog'
+import { KanbanColumn } from '@/components/KanbanColumn'
+import { TaskFormDialog } from '@/components/TaskFormDialog'
 import { TaskDetailSheet } from '@/components/TaskDetailSheet'
 import { Button } from '@/components/ui/button'
 import { Loader2, Plus } from 'lucide-react'
 import type { TaskStatus, ApiTask } from '@/lib/types'
 
 const columns: { status: TaskStatus; label: string; color: string }[] = [
-  { status: 'planning', label: 'Planning', color: 'bg-gray-50' },
-  { status: 'mocking', label: 'Mocking', color: 'bg-yellow-50' },
-  { status: 'developing', label: 'Developing', color: 'bg-blue-50' },
-  { status: 'done', label: 'Done', color: 'bg-green-50' },
+  { status: 'planning', label: 'Planning', color: 'bg-gray-100' },
+  { status: 'mocking', label: 'Mocking', color: 'bg-yellow-100' },
+  { status: 'developing', label: 'Developing', color: 'bg-blue-100' },
+  { status: 'done', label: 'Done', color: 'bg-green-100' },
 ]
 
 export function TasksPage() {
   const [selectedProject, setSelectedProject] = useState<string>()
   const [createDialogOpen, setCreateDialogOpen] = useState(false)
   const [selectedTask, setSelectedTask] = useState<ApiTask | null>(null)
+  const [activeTask, setActiveTask] = useState<ApiTask | null>(null)
+  const [overColumn, setOverColumn] = useState<TaskStatus | null>(null)
+
   const { data: tasks, isLoading } = useApiTasks({ projectId: selectedProject })
   const { data: projects } = useProjects()
+  const updateStatus = useUpdateTaskStatus()
+
+  const sensors = useSensors(
+    useSensor(PointerSensor, {
+      activationConstraint: {
+        distance: 8,
+      },
+    })
+  )
 
   const tasksByStatus = tasks?.reduce((acc, task) => {
     if (!acc[task.status]) acc[task.status] = []
     acc[task.status].push(task)
     return acc
-  }, {} as Record<TaskStatus, typeof tasks>)
+  }, {} as Record<TaskStatus, ApiTask[]>)
+
+  const handleDragStart = (event: DragStartEvent) => {
+    const task = event.active.data.current?.task as ApiTask
+    setActiveTask(task)
+  }
+
+  const handleDragOver = (event: any) => {
+    const overId = event.over?.id as TaskStatus | null
+    if (overId && columns.some((c) => c.status === overId)) {
+      setOverColumn(overId)
+    } else {
+      setOverColumn(null)
+    }
+  }
+
+  const handleDragEnd = async (event: DragEndEvent) => {
+    const { active, over } = event
+    setActiveTask(null)
+    setOverColumn(null)
+
+    if (!over) return
+
+    const taskId = active.id as string
+    const newStatus = over.id as TaskStatus
+    const task = tasks?.find((t) => t.id === taskId)
+
+    if (!task || task.status === newStatus) return
+
+    // Optimistic update
+    try {
+      await updateStatus.mutateAsync({ id: taskId, status: newStatus })
+    } catch (error) {
+      console.error('Failed to update task status:', error)
+      // TODO: Add toast notification for error
+    }
+  }
 
   if (isLoading) {
     return (
@@ -72,23 +130,23 @@ export function TasksPage() {
       {/* Kanban Board */}
       <div className="flex-1 overflow-x-auto">
         <div className="p-6 min-w-max">
-          <div className="grid grid-cols-4 gap-4">
-            {columns.map((column) => {
-              const columnTasks = tasksByStatus?.[column.status] || []
-              return (
-                <div key={column.status} className="flex flex-col">
-                  {/* Column header */}
-                  <div className={`p-3 rounded-t-lg ${column.color}`}>
-                    <h3 className="font-semibold text-sm">
-                      {column.label}
-                      <span className="ml-2 text-gray-500">
-                        ({columnTasks.length})
-                      </span>
-                    </h3>
-                  </div>
-
-                  {/* Column content */}
-                  <div className="flex-1 bg-gray-50 rounded-b-lg p-3 space-y-3 min-h-[400px]">
+          <DndContext
+            sensors={sensors}
+            onDragStart={handleDragStart}
+            onDragOver={handleDragOver}
+            onDragEnd={handleDragEnd}
+          >
+            <div className="grid grid-cols-4 gap-4">
+              {columns.map((column) => {
+                const columnTasks = tasksByStatus?.[column.status] || []
+                return (
+                  <KanbanColumn
+                    key={column.status}
+                    status={column.status}
+                    label={`${column.label} (${columnTasks.length})`}
+                    color={column.color}
+                    isOver={overColumn === column.status}
+                  >
                     {columnTasks.map((task) => (
                       <TaskCard
                         key={task.id}
@@ -101,15 +159,23 @@ export function TasksPage() {
                         No tasks
                       </div>
                     )}
-                  </div>
+                  </KanbanColumn>
+                )
+              })}
+            </div>
+
+            <DragOverlay>
+              {activeTask ? (
+                <div className="rotate-3 opacity-90">
+                  <TaskCard task={activeTask} />
                 </div>
-              )
-            })}
-          </div>
+              ) : null}
+            </DragOverlay>
+          </DndContext>
         </div>
       </div>
 
-      <CreateTaskDialog
+      <TaskFormDialog
         open={createDialogOpen}
         onOpenChange={setCreateDialogOpen}
       />

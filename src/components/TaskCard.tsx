@@ -1,7 +1,9 @@
+import { useDraggable } from '@dnd-kit/core'
+import { CSS } from '@dnd-kit/utilities'
 import { Badge } from './ui/badge'
 import { Card, CardContent, CardHeader } from './ui/card'
 import type { ApiTask } from '@/lib/types'
-import { Database, Code, Webhook, Workflow } from 'lucide-react'
+import { Database, Code, Webhook, Workflow, GripVertical } from 'lucide-react'
 
 const priorityColors = {
   P0: 'bg-red-100 text-red-800 border-red-200',
@@ -25,13 +27,35 @@ interface TaskCardProps {
 export function TaskCard({ task, onClick }: TaskCardProps) {
   const Icon = apiTypeIcons[task.api_type]
 
+  const { attributes, listeners, setNodeRef, transform, isDragging } = useDraggable({
+    id: task.id,
+    data: { task },
+  })
+
+  const style = {
+    transform: CSS.Translate.toString(transform),
+    opacity: isDragging ? 0.5 : 1,
+  }
+
   return (
     <Card
-      className="cursor-pointer hover:shadow-md transition-shadow"
+      ref={setNodeRef}
+      style={style}
+      className={`cursor-pointer hover:shadow-md transition-shadow ${
+        isDragging ? 'shadow-lg ring-2 ring-blue-400' : ''
+      }`}
       onClick={onClick}
     >
       <CardHeader className="pb-3">
         <div className="flex items-start justify-between gap-2">
+          <div
+            {...attributes}
+            {...listeners}
+            className="cursor-grab active:cursor-grabbing p-1 -ml-1 text-gray-400 hover:text-gray-600"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <GripVertical className="w-4 h-4" />
+          </div>
           <h3 className="font-medium text-sm line-clamp-2 flex-1">
             {task.title}
           </h3>

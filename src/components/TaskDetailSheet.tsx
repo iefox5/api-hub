@@ -6,12 +6,26 @@ import {
   SheetHeader,
   SheetTitle,
 } from './ui/sheet'
-import { Tabs, TabsContent, TabsList, TabsTrigger } from './ui/tabs'
 import { Badge } from './ui/badge'
 import { Button } from './ui/button'
 import { useMockResponses, callMockApi } from '@/lib/hooks/useMockResponses'
 import type { ApiTask } from '@/lib/types'
-import { Copy, Play, Loader2 } from 'lucide-react'
+import { Copy, Play, Loader2, Pencil, Trash2 } from 'lucide-react'
+import { TaskFormDialog } from './TaskFormDialog'
+import { MockEditor } from './MockEditor'
+import { ContractEditor } from './ContractEditor'
+import { useDeleteTask } from '@/lib/hooks/useApiTasks'
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from './ui/alert-dialog'
 
 interface TaskDetailSheetProps {
   task: ApiTask | null
@@ -24,6 +38,8 @@ export function TaskDetailSheet({ task, open, onOpenChange }: TaskDetailSheetPro
   const [testResult, setTestResult] = useState<any>(null)
   const [testing, setTesting] = useState(false)
   const [selectedScenario, setSelectedScenario] = useState('success')
+  const [editDialogOpen, setEditDialogOpen] = useState(false)
+  const deleteTask = useDeleteTask()
 
   if (!task) return null
 
@@ -49,7 +65,46 @@ export function TaskDetailSheet({ task, open, onOpenChange }: TaskDetailSheetPro
     <Sheet open={open} onOpenChange={onOpenChange}>
       <SheetContent className="w-full sm:max-w-2xl overflow-y-auto">
         <SheetHeader>
-          <SheetTitle className="text-xl">{task.title}</SheetTitle>
+          <div className="flex items-center justify-between">
+            <SheetTitle className="text-xl">{task.title}</SheetTitle>
+            <div className="flex items-center gap-2">
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={() => setEditDialogOpen(true)}
+              >
+                <Pencil className="w-4 h-4 mr-1" />
+                Edit
+              </Button>
+              <AlertDialog>
+                <AlertDialogTrigger asChild>
+                  <Button size="sm" variant="outline" className="text-red-600 hover:text-red-700">
+                    <Trash2 className="w-4 h-4" />
+                  </Button>
+                </AlertDialogTrigger>
+                <AlertDialogContent>
+                  <AlertDialogHeader>
+                    <AlertDialogTitle>Delete Task</AlertDialogTitle>
+                    <AlertDialogDescription>
+                      Are you sure you want to delete "{task.title}"? This will also delete all associated Mock data. This action cannot be undone.
+                    </AlertDialogDescription>
+                  </AlertDialogHeader>
+                  <AlertDialogFooter>
+                    <AlertDialogCancel>Cancel</AlertDialogCancel>
+                    <AlertDialogAction
+                      className="bg-red-600 hover:bg-red-700"
+                      onClick={async () => {
+                        await deleteTask.mutateAsync(task.id)
+                        onOpenChange(false)
+                      }}
+                    >
+                      Delete
+                    </AlertDialogAction>
+                  </AlertDialogFooter>
+                </AlertDialogContent>
+              </AlertDialog>
+            </div>
+          </div>
           <SheetDescription className="flex items-center gap-2 mt-2">
             <Badge>{task.status}</Badge>
             <Badge variant="outline">{task.priority}</Badge>
@@ -153,46 +208,32 @@ export function TaskDetailSheet({ task, open, onOpenChange }: TaskDetailSheetPro
               )}
             </div>
 
-            {/* Mock Responses */}
-            {mockResponses && mockResponses.length > 0 && (
-              <Tabs defaultValue={mockResponses[0].scenario} className="mt-6">
-                <TabsList>
-                  {mockResponses.map((response) => (
-                    <TabsTrigger key={response.scenario} value={response.scenario}>
-                      {response.scenario}
-                    </TabsTrigger>
-                  ))}
-                </TabsList>
-                {mockResponses.map((response) => (
-                  <TabsContent key={response.scenario} value={response.scenario}>
-                    <div className="space-y-2">
-                      <div>
-                        <label className="text-xs font-medium text-gray-700">Status Code</label>
-                        <p className="text-sm mt-1">{response.status_code}</p>
-                      </div>
-                      <div>
-                        <label className="text-xs font-medium text-gray-700">Response Data</label>
-                        <pre className="mt-1 text-xs bg-gray-100 p-3 rounded overflow-x-auto border">
-                          {JSON.stringify(response.response_data, null, 2)}
-                        </pre>
-                      </div>
-                    </div>
-                  </TabsContent>
-                ))}
-              </Tabs>
-            )}
+            {/* Mock Responses - Editable */}
+            <div className="mt-6 space-y-4">
+              <h4 className="text-sm font-medium text-gray-700">Mock Responses</h4>
+              {['success', 'empty', 'error'].map((scenario) => {
+                const existingResponse = mockResponses?.find((r) => r.scenario === scenario)
+                return (
+                  <MockEditor
+                    key={scenario}
+                    taskId={task.id}
+                    scenario={scenario}
+                    mockResponse={existingResponse}
+                  />
+                )
+              })}
+            </div>
           </div>
 
-          {/* Contract */}
-          {task.contract && (
-            <div className="border-t pt-6">
-              <h3 className="text-sm font-semibold mb-2">API Contract</h3>
-              <pre className="text-xs bg-gray-100 p-3 rounded overflow-x-auto border">
-                {JSON.stringify(task.contract, null, 2)}
-              </pre>
-            </div>
-          )}
+          {/* Contract Editor */}
+          <ContractEditor task={task} />
         </div>
+
+        <TaskFormDialog
+          open={editDialogOpen}
+          onOpenChange={setEditDialogOpen}
+          task={task}
+        />
       </SheetContent>
     </Sheet>
   )
