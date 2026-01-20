@@ -11,7 +11,8 @@ import { Badge } from './ui/badge'
 import { Button } from './ui/button'
 import { useMockResponses, callMockApi } from '@/lib/hooks/useMockResponses'
 import type { ApiTask } from '@/lib/types'
-import { Copy, Play, Loader2 } from 'lucide-react'
+import { Copy, Play, Loader2, Pencil } from 'lucide-react'
+import { TaskFormDialog } from './TaskFormDialog'
 
 interface TaskDetailSheetProps {
   task: ApiTask | null
@@ -24,6 +25,7 @@ export function TaskDetailSheet({ task, open, onOpenChange }: TaskDetailSheetPro
   const [testResult, setTestResult] = useState<any>(null)
   const [testing, setTesting] = useState(false)
   const [selectedScenario, setSelectedScenario] = useState('success')
+  const [editDialogOpen, setEditDialogOpen] = useState(false)
 
   if (!task) return null
 
@@ -49,7 +51,17 @@ export function TaskDetailSheet({ task, open, onOpenChange }: TaskDetailSheetPro
     <Sheet open={open} onOpenChange={onOpenChange}>
       <SheetContent className="w-full sm:max-w-2xl overflow-y-auto">
         <SheetHeader>
-          <SheetTitle className="text-xl">{task.title}</SheetTitle>
+          <div className="flex items-center justify-between">
+            <SheetTitle className="text-xl">{task.title}</SheetTitle>
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={() => setEditDialogOpen(true)}
+            >
+              <Pencil className="w-4 h-4 mr-1" />
+              Edit
+            </Button>
+          </div>
           <SheetDescription className="flex items-center gap-2 mt-2">
             <Badge>{task.status}</Badge>
             <Badge variant="outline">{task.priority}</Badge>
@@ -193,6 +205,12 @@ export function TaskDetailSheet({ task, open, onOpenChange }: TaskDetailSheetPro
             </div>
           )}
         </div>
+
+        <TaskFormDialog
+          open={editDialogOpen}
+          onOpenChange={setEditDialogOpen}
+          task={task}
+        />
       </SheetContent>
     </Sheet>
   )

@@ -2,7 +2,7 @@ import { useState } from 'react'
 import { useApiTasks } from '@/lib/hooks/useApiTasks'
 import { useProjects } from '@/lib/hooks/useProjects'
 import { TaskCard } from '@/components/TaskCard'
-import { CreateTaskDialog } from '@/components/CreateTaskDialog'
+import { TaskFormDialog } from '@/components/TaskFormDialog'
 import { TaskDetailSheet } from '@/components/TaskDetailSheet'
 import { Button } from '@/components/ui/button'
 import { Loader2, Plus } from 'lucide-react'
@@ -109,7 +109,7 @@ export function TasksPage() {
         </div>
       </div>
 
-      <CreateTaskDialog
+      <TaskFormDialog
         open={createDialogOpen}
         onOpenChange={setCreateDialogOpen}
       />

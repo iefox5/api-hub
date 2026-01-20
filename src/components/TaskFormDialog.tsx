@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import {
   Dialog,
   DialogContent,
@@ -19,64 +19,99 @@ import { Textarea } from './ui/textarea'
 import { Label } from './ui/label'
 import { Button } from './ui/button'
 import { useProjects } from '@/lib/hooks/useProjects'
-import { useCreateApiTask } from '@/lib/hooks/useApiTasks'
-import type { ApiType, PriorityLevel } from '@/lib/types'
+import { useCreateApiTask, useUpdateTask } from '@/lib/hooks/useApiTasks'
+import type { ApiTask, ApiType, PriorityLevel } from '@/lib/types'
 
-interface CreateTaskDialogProps {
+interface TaskFormDialogProps {
   open: boolean
   onOpenChange: (open: boolean) => void
+  task?: ApiTask | null  // If provided, edit mode
 }
 
-export function CreateTaskDialog({ open, onOpenChange }: CreateTaskDialogProps) {
+const initialFormData = {
+  title: '',
+  description: '',
+  project_id: '',
+  api_type: 'rest' as ApiType,
+  priority: 'P2' as PriorityLevel,
+  endpoint: '',
+  method: 'GET',
+  assignee: '',
+}
+
+export function TaskFormDialog({ open, onOpenChange, task }: TaskFormDialogProps) {
   const { data: projects } = useProjects()
   const createTask = useCreateApiTask()
+  const updateTask = useUpdateTask()
 
-  const [formData, setFormData] = useState({
-    title: '',
-    description: '',
-    project_id: '',
-    api_type: 'rest' as ApiType,
-    priority: 'P2' as PriorityLevel,
-    endpoint: '',
-    method: 'GET',
-    assignee: '',
-  })
+  const isEditMode = !!task
+
+  const [formData, setFormData] = useState(initialFormData)
+
+  // Populate form when editing
+  useEffect(() => {
+    if (task) {
+      setFormData({
+        title: task.title,
+        description: task.description || '',
+        project_id: task.project_id,
+        api_type: task.api_type,
+        priority: task.priority,
+        endpoint: task.endpoint || '',
+        method: task.method || 'GET',
+        assignee: task.assignee || '',
+      })
+    } else {
+      setFormData(initialFormData)
+    }
+  }, [task, open])
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
 
     try {
-      await createTask.mutateAsync({
-        ...formData,
-        status: 'planning',
-        contract: null,
-        created_by: null,
-      })
+      if (isEditMode && task) {
+        await updateTask.mutateAsync({
+          id: task.id,
+          title: formData.title,
+          description: formData.description || null,
+          api_type: formData.api_type,
+          priority: formData.priority,
+          endpoint: formData.endpoint || null,
+          method: formData.method || null,
+          assignee: formData.assignee || null,
+        })
+      } else {
+        await createTask.mutateAsync({
+          ...formData,
+          description: formData.description || null,
+          endpoint: formData.endpoint || null,
+          method: formData.method || null,
+          assignee: formData.assignee || null,
+          status: 'planning',
+          contract: null,
+          created_by: null,
+        })
+      }
 
-      // Reset form and close dialog
-      setFormData({
-        title: '',
-        description: '',
-        project_id: '',
-        api_type: 'rest',
-        priority: 'P2',
-        endpoint: '',
-        method: 'GET',
-        assignee: '',
-      })
+      setFormData(initialFormData)
       onOpenChange(false)
     } catch (error) {
-      console.error('Failed to create task:', error)
+      console.error('Failed to save task:', error)
     }
   }
+
+  const isPending = createTask.isPending || updateTask.isPending
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle>Create API Task</DialogTitle>
+          <DialogTitle>{isEditMode ? 'Edit Task' : 'Create API Task'}</DialogTitle>
           <DialogDescription>
-            Create a new API development task for your project
+            {isEditMode
+              ? 'Update the task details'
+              : 'Create a new API development task for your project'}
           </DialogDescription>
         </DialogHeader>
 
@@ -113,6 +148,7 @@ export function CreateTaskDialog({ open, onOpenChange }: CreateTaskDialogProps) 
                 required
                 value={formData.project_id}
                 onValueChange={(value) => setFormData({ ...formData, project_id: value })}
+                disabled={isEditMode}  // Can't change project after creation
               >
                 <SelectTrigger id="project">
                   <SelectValue placeholder="Select project" />
@@ -217,8 +253,8 @@ export function CreateTaskDialog({ open, onOpenChange }: CreateTaskDialogProps) 
             >
               Cancel
             </Button>
-            <Button type="submit" disabled={createTask.isPending}>
-              {createTask.isPending ? 'Creating...' : 'Create Task'}
+            <Button type="submit" disabled={isPending}>
+              {isPending ? 'Saving...' : isEditMode ? 'Save Changes' : 'Create Task'}
             </Button>
           </DialogFooter>
         </form>
