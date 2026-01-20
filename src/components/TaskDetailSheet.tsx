@@ -6,13 +6,13 @@ import {
   SheetHeader,
   SheetTitle,
 } from './ui/sheet'
-import { Tabs, TabsContent, TabsList, TabsTrigger } from './ui/tabs'
 import { Badge } from './ui/badge'
 import { Button } from './ui/button'
 import { useMockResponses, callMockApi } from '@/lib/hooks/useMockResponses'
 import type { ApiTask } from '@/lib/types'
 import { Copy, Play, Loader2, Pencil, Trash2 } from 'lucide-react'
 import { TaskFormDialog } from './TaskFormDialog'
+import { MockEditor } from './MockEditor'
 import { useDeleteTask } from '@/lib/hooks/useApiTasks'
 import {
   AlertDialog,
@@ -207,34 +207,21 @@ export function TaskDetailSheet({ task, open, onOpenChange }: TaskDetailSheetPro
               )}
             </div>
 
-            {/* Mock Responses */}
-            {mockResponses && mockResponses.length > 0 && (
-              <Tabs defaultValue={mockResponses[0].scenario} className="mt-6">
-                <TabsList>
-                  {mockResponses.map((response) => (
-                    <TabsTrigger key={response.scenario} value={response.scenario}>
-                      {response.scenario}
-                    </TabsTrigger>
-                  ))}
-                </TabsList>
-                {mockResponses.map((response) => (
-                  <TabsContent key={response.scenario} value={response.scenario}>
-                    <div className="space-y-2">
-                      <div>
-                        <label className="text-xs font-medium text-gray-700">Status Code</label>
-                        <p className="text-sm mt-1">{response.status_code}</p>
-                      </div>
-                      <div>
-                        <label className="text-xs font-medium text-gray-700">Response Data</label>
-                        <pre className="mt-1 text-xs bg-gray-100 p-3 rounded overflow-x-auto border">
-                          {JSON.stringify(response.response_data, null, 2)}
-                        </pre>
-                      </div>
-                    </div>
-                  </TabsContent>
-                ))}
-              </Tabs>
-            )}
+            {/* Mock Responses - Editable */}
+            <div className="mt-6 space-y-4">
+              <h4 className="text-sm font-medium text-gray-700">Mock Responses</h4>
+              {['success', 'empty', 'error'].map((scenario) => {
+                const existingResponse = mockResponses?.find((r) => r.scenario === scenario)
+                return (
+                  <MockEditor
+                    key={scenario}
+                    taskId={task.id}
+                    scenario={scenario}
+                    mockResponse={existingResponse}
+                  />
+                )
+              })}
+            </div>
           </div>
 
           {/* Contract */}
