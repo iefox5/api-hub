@@ -11,8 +11,20 @@ import { Badge } from './ui/badge'
 import { Button } from './ui/button'
 import { useMockResponses, callMockApi } from '@/lib/hooks/useMockResponses'
 import type { ApiTask } from '@/lib/types'
-import { Copy, Play, Loader2, Pencil } from 'lucide-react'
+import { Copy, Play, Loader2, Pencil, Trash2 } from 'lucide-react'
 import { TaskFormDialog } from './TaskFormDialog'
+import { useDeleteTask } from '@/lib/hooks/useApiTasks'
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+  AlertDialogTrigger,
+} from './ui/alert-dialog'
 
 interface TaskDetailSheetProps {
   task: ApiTask | null
@@ -26,6 +38,7 @@ export function TaskDetailSheet({ task, open, onOpenChange }: TaskDetailSheetPro
   const [testing, setTesting] = useState(false)
   const [selectedScenario, setSelectedScenario] = useState('success')
   const [editDialogOpen, setEditDialogOpen] = useState(false)
+  const deleteTask = useDeleteTask()
 
   if (!task) return null
 
@@ -53,14 +66,43 @@ export function TaskDetailSheet({ task, open, onOpenChange }: TaskDetailSheetPro
         <SheetHeader>
           <div className="flex items-center justify-between">
             <SheetTitle className="text-xl">{task.title}</SheetTitle>
-            <Button
-              size="sm"
-              variant="outline"
-              onClick={() => setEditDialogOpen(true)}
-            >
-              <Pencil className="w-4 h-4 mr-1" />
-              Edit
-            </Button>
+            <div className="flex items-center gap-2">
+              <Button
+                size="sm"
+                variant="outline"
+                onClick={() => setEditDialogOpen(true)}
+              >
+                <Pencil className="w-4 h-4 mr-1" />
+                Edit
+              </Button>
+              <AlertDialog>
+                <AlertDialogTrigger asChild>
+                  <Button size="sm" variant="outline" className="text-red-600 hover:text-red-700">
+                    <Trash2 className="w-4 h-4" />
+                  </Button>
+                </AlertDialogTrigger>
+                <AlertDialogContent>
+                  <AlertDialogHeader>
+                    <AlertDialogTitle>Delete Task</AlertDialogTitle>
+                    <AlertDialogDescription>
+                      Are you sure you want to delete "{task.title}"? This will also delete all associated Mock data. This action cannot be undone.
+                    </AlertDialogDescription>
+                  </AlertDialogHeader>
+                  <AlertDialogFooter>
+                    <AlertDialogCancel>Cancel</AlertDialogCancel>
+                    <AlertDialogAction
+                      className="bg-red-600 hover:bg-red-700"
+                      onClick={async () => {
+                        await deleteTask.mutateAsync(task.id)
+                        onOpenChange(false)
+                      }}
+                    >
+                      Delete
+                    </AlertDialogAction>
+                  </AlertDialogFooter>
+                </AlertDialogContent>
+              </AlertDialog>
+            </div>
           </div>
           <SheetDescription className="flex items-center gap-2 mt-2">
             <Badge>{task.status}</Badge>
