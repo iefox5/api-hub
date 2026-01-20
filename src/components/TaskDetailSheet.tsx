@@ -13,6 +13,7 @@ import type { ApiTask } from '@/lib/types'
 import { Copy, Play, Loader2, Pencil, Trash2 } from 'lucide-react'
 import { TaskFormDialog } from './TaskFormDialog'
 import { MockEditor } from './MockEditor'
+import { ContractEditor } from './ContractEditor'
 import { useDeleteTask } from '@/lib/hooks/useApiTasks'
 import {
   AlertDialog,
@@ -224,15 +225,8 @@ export function TaskDetailSheet({ task, open, onOpenChange }: TaskDetailSheetPro
             </div>
           </div>
 
-          {/* Contract */}
-          {task.contract && (
-            <div className="border-t pt-6">
-              <h3 className="text-sm font-semibold mb-2">API Contract</h3>
-              <pre className="text-xs bg-gray-100 p-3 rounded overflow-x-auto border">
-                {JSON.stringify(task.contract, null, 2)}
-              </pre>
-            </div>
-          )}
+          {/* Contract Editor */}
+          <ContractEditor task={task} />
         </div>
 
         <TaskFormDialog

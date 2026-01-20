@@ -63,3 +63,18 @@ export interface ApiRegistry {
   auth_required: boolean
   created_at: string
 }
+
+export interface ApiContract {
+  request?: {
+    headers?: Record<string, string>
+    params?: Record<string, { type: string; required: boolean; description?: string }>
+    query?: Record<string, { type: string; required: boolean; description?: string }>
+    body?: object
+  }
+  response?: {
+    [statusCode: string]: {
+      description: string
+      body: object
+    }
+  }
+}
